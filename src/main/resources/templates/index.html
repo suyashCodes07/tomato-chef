@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tomato Chef — Your AI Kitchen Companion</title>
+    <style>
+        :root {
+            --cream: #fbf7ef;
+            --paper: #fffdf8;
+            --tomato: #e94f37;
+            --tomato-dark: #c83b28;
+            --green: #315d43;
+            --green-soft: #e8f0e8;
+            --ink: #242a24;
+            --muted: #777b72;
+            --line: #e9e3d8;
+            --shadow: 0 18px 55px rgba(63, 48, 28, .08);
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; background: var(--cream); color: var(--ink);
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+        button, textarea { font: inherit; }
+        button { cursor: pointer; }
+        .app { min-height: 100vh; display: grid; grid-template-columns: 264px minmax(0, 1fr); }
+        .sidebar {
+            padding: 25px 17px; background: #f4efe5; border-right: 1px solid var(--line);
+            display: flex; flex-direction: column; gap: 26px;
+        }
+        .brand { display: flex; align-items: center; gap: 11px; padding: 2px 8px; }
+        .brand-mark {
+            width: 43px; height: 43px; display: grid; place-items: center; border-radius: 15px;
+            background: var(--tomato); color: white; font-size: 23px; box-shadow: 0 7px 15px #e94f3730;
+        }
+        .brand-name { font-size: 19px; font-weight: 850; letter-spacing: -.7px; }
+        .brand-sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
+        .new-chat {
+            border: 0; border-radius: 13px; background: var(--green); color: white; padding: 13px 15px;
+            font-weight: 700; display: flex; justify-content: center; align-items: center; gap: 9px;
+            box-shadow: 0 7px 15px #315d431b; transition: transform .18s, background .18s;
+        }
+        .new-chat:hover { background: #244a33; transform: translateY(-1px); }
+        .side-label { padding: 0 10px; color: #8a887e; font-size: 10px; font-weight: 800; letter-spacing: 1.5px; }
+        .side-link {
+            display: flex; gap: 12px; align-items: center; border: 0; background: transparent; width: 100%;
+            color: #555b52; text-align: left; padding: 11px 12px; border-radius: 11px; font-size: 13px;
+        }
+        .side-link:hover, .side-link.active { background: #e9e2d5; color: var(--green); }
+        .side-link .emoji { width: 20px; text-align: center; font-size: 16px; }
+        .side-bottom { margin-top: auto; }
+        .tip-card {
+            background: #e5ecdf; border: 1px solid #d7e1d0; border-radius: 16px; padding: 16px;
+            color: var(--green);
+        }
+        .tip-card .tip-title { font-size: 12px; font-weight: 800; margin: 8px 0 5px; }
+        .tip-card p { font-size: 11px; line-height: 1.6; margin: 0; color: #607363; }
+        .main { min-width: 0; display: flex; flex-direction: column; min-height: 100vh; }
+        .topbar {
+            height: 76px; border-bottom: 1px solid var(--line); display: flex; align-items: center;
+            justify-content: space-between; padding: 0 35px; background: rgba(255,253,248,.78);
+        }
+        .top-title { font-size: 14px; font-weight: 750; }
+        .online { display: flex; gap: 7px; align-items: center; font-size: 11px; color: var(--green); background: var(--green-soft); padding: 7px 10px; border-radius: 30px; }
+        .dot { width: 7px; height: 7px; background: #4d9c65; border-radius: 50%; }
+        .mobile-brand { display: none; }
+        .content { width: min(850px, 100%); margin: 0 auto; padding: 42px 28px 24px; display: flex; flex-direction: column; flex: 1; }
+        .welcome { text-align: center; padding: 17px 0 25px; }
+        .hero-icon {
+            width: 68px; height: 68px; margin: 0 auto 19px; border-radius: 23px; display: grid; place-items: center;
+            background: #fbe3d8; font-size: 34px; transform: rotate(-4deg);
+        }
+        .eyebrow { text-transform: uppercase; color: var(--tomato); font-size: 10px; font-weight: 850; letter-spacing: 2.2px; }
+        h1 { font-size: clamp(28px, 4vw, 43px); letter-spacing: -1.8px; line-height: 1.13; margin: 10px 0 12px; }
+        h1 span { color: var(--tomato); }
+        .welcome p { max-width: 440px; margin: 0 auto; color: var(--muted); font-size: 14px; line-height: 1.7; }
+        .suggestion-heading { display: flex; align-items: center; gap: 8px; color: #74766e; font-size: 11px; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; margin: 5px 0 13px; }
+        .suggestions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 25px; }
+        .suggestion {
+            border: 1px solid var(--line); border-radius: 15px; background: var(--paper); padding: 15px;
+            display: flex; align-items: flex-start; gap: 12px; text-align: left; color: var(--ink);
+            transition: border .18s, transform .18s, box-shadow .18s;
+        }
+        .suggestion:hover { border-color: #e9a093; transform: translateY(-2px); box-shadow: 0 9px 22px #45321a0b; }
+        .suggestion-icon { flex: 0 0 37px; height: 37px; border-radius: 12px; display: grid; place-items: center; background: #f8eee2; font-size: 19px; }
+        .suggestion strong { display: block; font-size: 12px; margin: 2px 0 5px; }
+        .suggestion small { display: block; color: var(--muted); font-size: 11px; line-height: 1.45; }
+        .chat { display: flex; flex-direction: column; gap: 18px; padding: 5px 0 18px; }
+        .message { display: flex; align-items: flex-start; gap: 10px; max-width: 88%; animation: appear .22s ease-out; }
+        @keyframes appear { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .message.user { align-self: flex-end; flex-direction: row-reverse; }
+        .avatar { flex: 0 0 31px; height: 31px; border-radius: 11px; display: grid; place-items: center; font-size: 15px; background: #fbe3d8; }
+        .user .avatar { background: var(--green); color: white; font-size: 12px; }
+        .bubble { background: white; border: 1px solid var(--line); padding: 13px 15px; border-radius: 4px 15px 15px 15px; font-size: 13px; line-height: 1.7; overflow-wrap: anywhere; }
+        .user .bubble { background: var(--green); color: white; border-color: var(--green); border-radius: 15px 4px 15px 15px; white-space: pre-wrap; }
+        .bubble p { margin: 0 0 9px; }
+        .bubble p:last-child { margin-bottom: 0; }
+        .typing { display: flex; gap: 4px; align-items: center; padding: 4px 0; }
+        .typing span { width: 6px; height: 6px; border-radius: 50%; background: #9aa398; animation: bounce 1s infinite ease-in-out; }
+        .typing span:nth-child(2) { animation-delay: .15s; } .typing span:nth-child(3) { animation-delay: .3s; }
+        @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+        .composer-wrap { position: sticky; bottom: 0; padding: 14px 28px 22px; background: linear-gradient(transparent, var(--cream) 17%); }
+        .composer { width: min(790px, 100%); margin: 0 auto; border: 1px solid #ded8cc; border-radius: 19px; background: var(--paper); padding: 10px 11px 10px 17px; box-shadow: var(--shadow); }
+        .composer textarea { display: block; width: 100%; resize: none; border: 0; outline: 0; background: transparent; color: var(--ink); min-height: 27px; max-height: 130px; padding: 7px 0; font-size: 13px; line-height: 1.5; }
+        .composer textarea::placeholder { color: #9a9a91; }
+        .composer-bottom { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .hint { color: #92938b; font-size: 10px; }
+        .send {
+            width: 38px; height: 38px; border: 0; border-radius: 12px; background: var(--tomato); color: white;
+            display: grid; place-items: center; font-size: 18px; transition: background .15s, transform .15s;
+        }
+        .send:hover { background: var(--tomato-dark); transform: translateY(-1px); }
+        .send:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+        .disclaimer { text-align: center; color: #99978e; font-size: 10px; margin-top: 10px; }
+        .hidden { display: none !important; }
+        @media (max-width: 760px) {
+            .app { grid-template-columns: 1fr; }
+            .sidebar { display: none; }
+            .topbar { height: 64px; padding: 0 18px; }
+            .mobile-brand { display: flex; align-items: center; gap: 8px; font-weight: 850; }
+            .mobile-brand .brand-mark { width: 34px; height: 34px; border-radius: 11px; font-size: 18px; }
+            .content { padding: 25px 17px 12px; }
+            .welcome { padding: 12px 0 22px; }
+            .hero-icon { width: 58px; height: 58px; font-size: 29px; margin-bottom: 15px; }
+            .suggestions { gap: 9px; }
+            .suggestion { padding: 12px 10px; gap: 8px; }
+            .suggestion-icon { flex-basis: 30px; height: 30px; font-size: 16px; border-radius: 9px; }
+            .suggestion strong { font-size: 11px; }
+            .suggestion small { font-size: 10px; }
+            .composer-wrap { padding: 12px 13px 17px; }
+            .message { max-width: 96%; }
+        }
+        @media (max-width: 390px) { .suggestions { grid-template-columns: 1fr; } }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+<div class="app">
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-mark">🍅</div>
+            <div><div class="brand-name">Tomato Chef</div><div class="brand-sub">Your AI kitchen companion</div></div>
+        </div>
+        <button class="new-chat" id="newChat"><span>＋</span> New conversation</button>
+        <div>
+            <div class="side-label">EXPLORE</div>
+            <button class="side-link active" data-prompt="Suggest a quick and easy vegetarian dinner."><span class="emoji">🥗</span> Quick & easy meals</button>
+            <button class="side-link" data-prompt="Suggest a healthy, balanced meal plan for today."><span class="emoji">🌿</span> Healthy ideas</button>
+            <button class="side-link" data-prompt="Give me a simple Indian recipe with ingredients and step-by-step instructions."><span class="emoji">🍛</span> Indian favourites</button>
+            <button class="side-link" data-prompt="What can I cook with the ingredients I already have? Help me figure it out."><span class="emoji">🧺</span> Use what I have</button>
+        </div>
+        <div class="side-bottom">
+            <div class="tip-card">
+                <div style="font-size:23px">👨‍🍳</div>
+                <div class="tip-title">A little kitchen wisdom</div>
+                <p>Tell me what is in your fridge, how much time you have, and any dietary preferences. Let's make something delicious.</p>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <div class="mobile-brand"><div class="brand-mark">🍅</div> Tomato Chef</div>
+            <div class="top-title" id="topTitle">Your personal cooking assistant</div>
+            <div class="online"><span class="dot"></span> Ready to cook</div>
+        </header>
+
+        <section class="content">
+            <div class="welcome" id="welcome">
+                <div class="hero-icon">🍅</div>
+                <div class="eyebrow">Good food starts here</div>
+                <h1>What are we <span>cooking</span><br>today?</h1>
+                <p>Your friendly AI chef for recipes, kitchen tips, ingredient swaps, and everyday food inspiration.</p>
+            </div>
+
+            <div id="suggestionArea">
+                <div class="suggestion-heading"><span>✦</span> A pinch of inspiration</div>
+                <div class="suggestions">
+                    <button class="suggestion" data-prompt="Give me a 20-minute vegetarian dinner recipe with ingredients and clear steps.">
+                        <span class="suggestion-icon">⏱️</span><span><strong>Ready in 20 minutes</strong><small>Fast, tasty meals for busy days</small></span>
+                    </button>
+                    <button class="suggestion" data-prompt="Suggest a high-protein vegetarian Indian meal with ingredients and cooking steps.">
+                        <span class="suggestion-icon">🥑</span><span><strong>Healthy & wholesome</strong><small>Feel-good food that satisfies</small></span>
+                    </button>
+                    <button class="suggestion" data-prompt="I want to make a delicious Indian comfort food recipe. Suggest one with ingredients and steps.">
+                        <span class="suggestion-icon">🍲</span><span><strong>Comfort food, please</strong><small>Cosy classics with a little love</small></span>
+                    </button>
+                    <button class="suggestion" data-prompt="I have potatoes, onions, tomatoes and basic spices. What can I cook? Give me a recipe.">
+                        <span class="suggestion-icon">🧅</span><span><strong>Cook with what you have</strong><small>Turn everyday ingredients into a meal</small></span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="chat" id="chat" aria-live="polite"></div>
+        </section>
+
+        <div class="composer-wrap">
+            <form class="composer" id="chatForm">
+                <textarea id="messageInput" rows="1" placeholder="Ask me for a recipe, cooking tip, or ingredient swap..." aria-label="Your message"></textarea>
+                <div class="composer-bottom">
+                    <span class="hint">↵ Enter to send · Shift + Enter for a new line</span>
+                    <button class="send" id="sendButton" type="submit" aria-label="Send message">↑</button>
+                </div>
+            </form>
+            <div class="disclaimer">Tomato Chef is here to help you make everyday cooking easier.</div>
+        </div>
+    </main>
+</div>
+
+<script>
+    const chat = document.getElementById('chat');
+    const form = document.getElementById('chatForm');
+    const input = document.getElementById('messageInput');
+    const sendButton = document.getElementById('sendButton');
+    const welcome = document.getElementById('welcome');
+    const suggestionArea = document.getElementById('suggestionArea');
+    const topTitle = document.getElementById('topTitle');
+    let busy = false;
+
+
+    function addMessage(text, role) {
+        const row = document.createElement('div');
+        row.className = `message ${role}`;
+
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        avatar.textContent = role === 'user' ? 'You' : '🍅';
+
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+
+        if (role === 'assistant') {
+            // Render Markdown as formatted HTML and sanitize it for safety.
+            bubble.innerHTML = DOMPurify.sanitize(
+                marked.parse(text || '')
+            );
+        } else {
+            // Keep user messages as plain text.
+            bubble.textContent = text;
+        }
+
+        row.append(avatar, bubble);
+        chat.appendChild(row);
+
+        row.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
+        });
+
+        return row;
+    }
+
+
+    function addTyping() {
+        const row = document.createElement('div');
+        row.className = 'message assistant';
+        row.id = 'typingIndicator';
+        const avatar = document.createElement('div');
+        avatar.className = 'avatar';
+        avatar.textContent = '🍅';
+        const bubble = document.createElement('div');
+        bubble.className = 'bubble';
+        bubble.innerHTML = '<div class="typing" aria-label="Tomato Chef is thinking"><span></span><span></span><span></span></div>';
+        row.append(avatar, bubble);
+        chat.appendChild(row);
+        row.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        return row;
+    }
+
+    async function sendMessage(message) {
+        const cleanMessage = message.trim();
+        if (!cleanMessage || busy) return;
+        welcome.classList.add('hidden');
+        suggestionArea.classList.add('hidden');
+        topTitle.textContent = 'Cooking up an answer…';
+        addMessage(cleanMessage, 'user');
+        input.value = '';
+        input.style.height = 'auto';
+        busy = true;
+        sendButton.disabled = true;
+        const typing = addTyping();
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain; charset=UTF-8' },
+                body: cleanMessage
+            });
+            if (!response.ok) {
+                const details = await response.text().catch(() => '');
+                throw new Error(details || `Server returned ${response.status}`);
+            }
+            const answer = await response.text();
+            typing.remove();
+            addMessage(answer || 'I did not get a response. Please try asking again.', 'assistant');
+            topTitle.textContent = 'Your personal cooking assistant';
+        } catch (error) {
+            typing.remove();
+            addMessage('I could not reach the cooking assistant. Check that your Spring Boot app is running and that POST /api/chat is available. Then try again.', 'assistant');
+            console.error('Tomato Chef API error:', error);
+            topTitle.textContent = 'Connection issue';
+        } finally {
+            busy = false;
+            sendButton.disabled = false;
+            input.focus();
+        }
+    }
+
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        sendMessage(input.value);
+    });
+
+    input.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            form.requestSubmit();
+        }
+    });
+
+    input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 130) + 'px';
+    });
+
+    document.querySelectorAll('[data-prompt]').forEach((button) => {
+        button.addEventListener('click', () => sendMessage(button.dataset.prompt));
+    });
+
+    document.getElementById('newChat').addEventListener('click', () => {
+        chat.replaceChildren();
+        welcome.classList.remove('hidden');
+        suggestionArea.classList.remove('hidden');
+        topTitle.textContent = 'Your personal cooking assistant';
+        input.value = '';
+        input.focus();
+    });
+</script>
+</body>
+</html>
