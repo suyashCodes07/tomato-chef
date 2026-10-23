@@ -51,3 +51,10 @@ application-local.properties
 .DS_Store
 Thumbs.db
 
+!.env.example
+
+# Local monitoring data and credentials
+.env
+.env.*
+prometheus-data/
+grafana-data/

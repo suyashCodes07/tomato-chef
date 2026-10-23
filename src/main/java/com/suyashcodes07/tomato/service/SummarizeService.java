@@ -5,12 +5,20 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.stereotype.Service;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.metadata.Usage;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class SummarizeService {
+
+    private final Counter inputTokens;
+    private final Counter outputTokens;
+    private final Counter totalTokens;
 
     private final String SYSTEM_PROMPT = """
     You are Tomato Chef, a strict, concise AI cooking assistant.
@@ -134,19 +142,54 @@ public class SummarizeService {
     """;
 
     private ChatClient chatClient;
-    public SummarizeService(ChatClient.Builder builder) {
+    public SummarizeService(ChatClient.Builder builder,
+                            MeterRegistry meterRegistry) {
         this.chatClient = builder.build();
+
+        this.inputTokens = meterRegistry.counter("tomato.gemini.input.tokens");
+        this.outputTokens = meterRegistry.counter("tomato.gemini.output.tokens");
+        this.totalTokens = meterRegistry.counter("tomato.gemini.total.tokens");
     }
     private List<Message> history = new ArrayList<>();
+
     public String chat(String message) {
         history.add(new UserMessage(message));
-        String output = chatClient.prompt()
+
+        ChatResponse response = chatClient.prompt()
                 .system(SYSTEM_PROMPT)
                 .messages(history)
                 .call()
-                .content();
-        history.add(new AssistantMessage(output));
-        return output;
+                .chatResponse();
 
+        String output = response.getResult()
+                .getOutput()
+                .getText();
+
+        if (response.getMetadata() != null
+                && response.getMetadata().getUsage() != null) {
+
+            Usage usage = response.getMetadata().getUsage();
+
+            Integer prompt = usage.getPromptTokens();
+            Integer completion = usage.getCompletionTokens();
+            Integer total = usage.getTotalTokens();
+
+            if (prompt != null && prompt > 0) {
+                inputTokens.increment(prompt);
+            }
+
+            if (completion != null && completion > 0) {
+                outputTokens.increment(completion);
+            }
+
+            if (total != null && total > 0) {
+                totalTokens.increment(total);
+            }
+        }
+
+        history.add(new AssistantMessage(output));
+
+        return output;
     }
+
 }
